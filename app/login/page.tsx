@@ -25,14 +25,6 @@ export default function LoginPage() {
   const formRef = useRef<HTMLDivElement>(null);
   const roleFieldRef = useRef<HTMLDivElement>(null);
 
-  // Redirect if user is already logged in
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      router.push("/");
-    }
-  }, [router]);
-
   // Initialize animations
   useEffect(() => {
     gsap.from(".auth-card", { duration: 1, scale: 0.8, opacity: 0, ease: "power3.out" });
@@ -43,34 +35,21 @@ export default function LoginPage() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(""); // Reset error message before request
-
-    const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
-
+    setErrorMessage("");
+    setIsLoading(true);
+  
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("Success:", data.message);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-          router.push("/");
-          window.location.reload();
-        } else {
-          setErrorMessage("Unexpected server response. Please try again.");
-        }
+      if (isLogin) {
+        await login(username, password);
       } else {
-        setErrorMessage(data.message || "An error occurred");
+        await signup(username, password, role as "user" | "doctor");
       }
+      router.push("/");
     } catch (error) {
-      console.error("Fetch error:", error);
-      setErrorMessage("Network error occurred");
+      console.error("Auth error:", error);
+      setErrorMessage("Authentication failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
