@@ -3,27 +3,27 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
+import Link from "next/link";
+import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useAuth } from "../contexts/AuthContext";
 import { HeartPulse, Stethoscope, UserCircle } from "lucide-react";
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("user");
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const { user, login, signup } = useAuth();
+  const { login, signup, user } = useAuth();
   const router = useRouter();
-
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [role, setRole] = useState("user");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const ecgLineRef = useRef<SVGPathElement>(null);
-  const formRef = useRef<HTMLDivElement>(null);
   const roleFieldRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -33,15 +33,13 @@ export default function LoginPage() {
 
   useEffect(() => {
     gsap.from(".auth-card", { duration: 1, scale: 0.8, opacity: 0, ease: "power3.out" });
-    gsap.from(".decorative-element", { duration: 1.5, scale: 0, rotation: 180, stagger: 0.2, ease: "elastic.out(1, 0.5)" });
     gsap.to(".floating-element", { y: 15, duration: 2, repeat: -1, yoyo: true, ease: "power1.inOut" });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage("");
+    setError("");
     setIsLoading(true);
-
     try {
       if (isLogin) {
         await login(username, password);
@@ -49,13 +47,13 @@ export default function LoginPage() {
         await signup(username, password, role as "user" | "doctor");
       }
       router.push("/");
-    } catch (error) {
-      console.error("Auth error:", error);
-      setErrorMessage("Authentication failed. Please try again.");
+    } catch {
+      setError("Authentication failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-sky-100 relative overflow-hidden">
@@ -74,7 +72,7 @@ export default function LoginPage() {
             <p className="text-gray-600">{isLogin ? "Secure access to your health portal" : "Start your health journey today"}</p>
           </div>
 
-          {errorMessage && <p className="text-red-500 text-sm text-center mb-4">{errorMessage}</p>}
+          {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="login-content">
