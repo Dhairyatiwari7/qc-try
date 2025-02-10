@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 type Doctor = {
   _id: string;
@@ -111,7 +112,15 @@ export default function BookAppointmentPage() {
         {doctors.map((doctor) => (
           <Card key={doctor._id} className="doctor-card">
             <CardHeader>
-              <img src={doctor.image} alt={doctor.name} />
+            <Avatar className="w-24 h-24 mx-auto">
+                <AvatarImage src={doctor.image} />
+                <AvatarFallback>
+                  {doctor.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
               <CardTitle>{doctor.name}</CardTitle>
               <CardDescription>{doctor.speciality}</CardDescription>
             </CardHeader>

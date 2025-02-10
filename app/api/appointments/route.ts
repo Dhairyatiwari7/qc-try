@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import clientPromise from "../../lib/db";
+import clientPromise from "../../lib/db"; // Corrected import path
 
 export async function POST(request: Request) {
   try {
@@ -8,14 +8,16 @@ export async function POST(request: Request) {
     const client = await clientPromise;
     const db = client.db("test");
 
-    // Fetch doctor details
+    if (!ObjectId.isValid(doctorId) || !ObjectId.isValid(userId)) {
+      return NextResponse.json({ message: "Invalid Doctor or User ID" }, { status: 400 });
+    }
+
     const doctor = await db.collection("doctors").findOne({ _id: new ObjectId(doctorId) });
     if (!doctor) {
       return NextResponse.json({ message: "Doctor not found" }, { status: 404 });
     }
 
-    // Create appointment
-    const result = await db.collection("Appointment").insertOne({
+    const result = await db.collection("appointments").insertOne({
       doctorId: new ObjectId(doctorId),
       userId: new ObjectId(userId),
       date,
@@ -37,18 +39,18 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
-
-  if (!userId) {
-    return NextResponse.json({ message: "User ID is required" }, { status: 400 });
-  }
-
   try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId || !ObjectId.isValid(userId)) {
+      return NextResponse.json({ message: "Invalid User ID" }, { status: 400 });
+    }
+
     const client = await clientPromise;
     const db = client.db("test");
 
-    const appointments = await db.collection("Appointment")
+    const appointments = await db.collection("appointments")
       .find({ userId: new ObjectId(userId) })
       .toArray();
 
