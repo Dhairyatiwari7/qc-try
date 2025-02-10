@@ -12,41 +12,50 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { username, password, role }: RequestBody = await request.json();
 
+    // Validate input
     if (!username || !password || !role) {
       return NextResponse.json({ message: "Invalid input" }, { status: 400 });
     }
 
-    const uri =
-      "mongodb+srv://quickcare:quickcare@cluster0.qpo69.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // REPLACE THIS!
+    // Use environment variable for MongoDB URI
+    const uri = 'mongodb+srv://quickcare:quickcare@cluster0.qpo69.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'; 
+    if (!uri) {
+      throw new Error("MongoDB URI not defined in environment variables");
+    }
+
     const client = new MongoClient(uri);
-
     await client.connect();
-    const db = client.db();
+    const db = client.db("test"); 
+    const usersCollection = db.collection("User"); 
 
-    const existingUser = await db.collection("User").findOne({ username });
-
+    // Check if user already exists
+    const existingUser = await usersCollection.findOne({ username });
     if (existingUser) {
       await client.close();
       return NextResponse.json({ message: "User exists already!" }, { status: 409 });
     }
 
-    // Hash the password before saving
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await db.collection("User").insertOne({
+    // Insert new user
+    const result = await usersCollection.insertOne({
       username,
       password: hashedPassword,
-      role, // Store the role
+      role,
     });
 
     await client.close();
-    return NextResponse.json({ 
-      message: "Created user!", 
-      user: { username, role } // Returning role as well
-    }, { status: 201 });
-
+    
+    return NextResponse.json(
+      { 
+        message: "User created successfully!", 
+        user: { username, role } 
+      }, 
+      { status: 201 }
+    );
   } catch (error) {
-    console.error(error);
+    console.error("Error creating user:", error);
     return NextResponse.json({ message: "Error creating user!" }, { status: 500 });
   }
 }

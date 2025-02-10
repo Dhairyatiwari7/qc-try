@@ -1,15 +1,17 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
 
 type User = {
+  id: string
   username: string
   role: "user" | "doctor"
 }
 
 type AuthContextType = {
   user: User | null
+  loading: boolean
+  error: string | null
   login: (username: string, password: string) => Promise<void>
   signup: (username: string, password: string, role: "user" | "doctor") => Promise<void>
   logout: () => void
@@ -19,37 +21,99 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check for saved user in localStorage
-    const savedUser = localStorage.getItem("user")
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
+    // Check for saved token in localStorage
+    const token = localStorage.getItem("token")
+    if (token) {
+      validateToken(token)
+    } else {
+      setLoading(false)
     }
   }, [])
 
+  const validateToken = async (token: string) => {
+    try {
+      const response = await fetch('/api/auth/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (response.ok) {
+        const userData = await response.json()
+        setUser(userData)
+      } else {
+        localStorage.removeItem("token")
+      }
+    } catch (error) {
+      console.error('Token validation error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const login = async (username: string, password: string) => {
-    // Here you would typically make an API call to verify credentials
-    // For this example, we'll just set the user directly
-    const newUser = { username, role: "user" as const }
-    setUser(newUser)
-    localStorage.setItem("user", JSON.stringify(newUser))
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      })
+      if (response.ok) {
+        const { user, token } = await response.json()
+        setUser(user)
+        localStorage.setItem("token", token)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.message || 'Login failed')
+      }
+    } catch (error) {
+      setError('An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const signup = async (username: string, password: string, role: "user" | "doctor") => {
-    // Here you would typically make an API call to create a new user
-    // For this example, we'll just set the user directly
-    const newUser = { username, role }
-    setUser(newUser)
-    localStorage.setItem("user", JSON.stringify(newUser))
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, role })
+      })
+      if (response.ok) {
+        const { user, token } = await response.json()
+        setUser(user)
+        localStorage.setItem("token", token)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.message || 'Signup failed')
+      }
+    } catch (error) {
+      setError('An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem("user")
+    localStorage.removeItem("token")
   }
 
-  return <AuthContext.Provider value={{ user, login, signup, logout }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, loading, error, login, signup, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export const useAuth = () => {
@@ -59,4 +123,3 @@ export const useAuth = () => {
   }
   return context
 }
-

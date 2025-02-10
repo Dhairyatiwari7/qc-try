@@ -1,41 +1,63 @@
 "use client"
 
-import { useEffect } from "react"
+
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { gsap } from "gsap"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-const patientDetails = {
-  1: {
-    name: "Alice Johnson",
-    age: 35,
-    condition: "Chronic Migraine",
-    symptoms: ["Severe headaches", "Sensitivity to light", "Nausea"],
-    history:
-      "Patient has been experiencing migraines for the past 5 years, with increasing frequency in recent months.",
-    medications: ["Sumatriptan", "Propranolol"],
-    lastVisit: "2024-01-15",
-    notes:
-      "Patient reports stress as a major trigger. Recommended lifestyle modifications and stress management techniques.",
-  },
-  // Add more patient details...
+interface Patient {
+  name: string
+  age: number
+  condition: string
+  symptoms: string[]
+  history: string
+  medications: string[]
+  lastVisit: string
+  notes: string
 }
 
 export default function PatientDetailPage() {
   const { id } = useParams()
-  const patient = patientDetails[id as keyof typeof patientDetails]
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    gsap.from(".detail-card", {
-      opacity: 0,
-      y: 50,
-      rotationX: 45,
-      duration: 1,
-      stagger: 0.2,
-      ease: "power3.out",
-    })
-  }, [])
+    const fetchPatientDetails = async () => {
+      try {
+        const response = await fetch(`/api/patients/${id}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch patient details')
+        }
+        const data = await response.json()
+        setPatient(data)
+      } catch (err) {
+        setError('Error fetching patient details')
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
+    fetchPatientDetails()
+  }, [id])
+
+  useEffect(() => {
+    if (!loading && patient) {
+      gsap.from(".detail-card", {
+        opacity: 0,
+        y: 50,
+        rotationX: 45,
+        duration: 1,
+        stagger: 0.2,
+        ease: "power3.out",
+      })
+    }
+  }, [loading, patient])
+
+  if (loading) return <div>Loading patient details...</div>
+  if (error) return <div>Error: {error}</div>
   if (!patient) return <div>Patient not found</div>
 
   return (
