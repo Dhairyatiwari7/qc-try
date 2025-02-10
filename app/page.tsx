@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "./contexts/AuthContext";
 import { Heart, Activity, Stethoscope, Pill, Ambulance } from "lucide-react";
 
-// Particle Animation Component
 interface Particle {
   x: number;
   y: number;
@@ -104,7 +103,6 @@ function AnimatedBackground() {
   );
 }
 
-// Floating Icons Component
 function FloatingIcon({ icon, delay, x, y }: { icon: React.ReactNode; delay: number; x: number; y: number }) {
   const iconRef = useRef(null);
 
@@ -153,7 +151,6 @@ function FloatingElements() {
   );
 }
 
-// Stats Card Component
 function StatsCard({ number, text, delay }: { number: string; text: string; delay: number }) {
   const cardRef = useRef(null);
 
@@ -177,7 +174,6 @@ function StatsCard({ number, text, delay }: { number: string; text: string; dela
   );
 }
 
-// Main HomePage Component
 export default function HomePage() {
   const { user } = useAuth();
 
@@ -200,17 +196,18 @@ export default function HomePage() {
         duration: 0.8,
       }, "-=0.4");
 
-    return () => tl.kill();
+    return () => {
+      tl.kill();
+      return undefined;
+    };
   }, []);
 
   return (
     <section className="relative min-h-screen overflow-hidden">
-      {/* Background Elements */}
       <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-blue-50" />
       <AnimatedBackground />
       <FloatingElements />
 
-      {/* Main Content */}
       <div className="relative z-10 container mx-auto px-4 pt-32 pb-20">
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-8">
@@ -223,7 +220,6 @@ export default function HomePage() {
             Your trusted healthcare companion for a healthier tomorrow
           </p>
 
-          {/* Dynamic Buttons Based on User */}
           <div className="hero-buttons">
             <div className="flex flex-col md:flex-row gap-6 justify-center">
               {user ? (
@@ -257,7 +253,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Stats Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
             <StatsCard number="10k+" text="Happy Patients" delay={0.3} />
             <StatsCard number="50+" text="Expert Doctors" delay={0.6} />
