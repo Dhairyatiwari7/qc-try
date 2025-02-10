@@ -77,7 +77,7 @@ export default function BookAppointmentPage() {
         },
         body: JSON.stringify({
           doctorId: selectedDoctor._id,
-          userId: user.id,
+          userId: user.username,
           date: selectedDate.toISOString(), 
           time: selectedTime,
           status: "upcoming",
@@ -111,6 +111,7 @@ export default function BookAppointmentPage() {
         {doctors.map((doctor) => (
           <Card key={doctor._id} className="doctor-card">
             <CardHeader>
+              <img src={doctor.image} alt={doctor.name} />
               <CardTitle>{doctor.name}</CardTitle>
               <CardDescription>{doctor.speciality}</CardDescription>
             </CardHeader>

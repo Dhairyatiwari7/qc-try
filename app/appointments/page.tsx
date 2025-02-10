@@ -23,6 +23,7 @@ type Doctor = {
 type Appointment = {
   id: string
   doctor: Doctor
+  userId: string
   date: string
   time: string
   status: "upcoming" | "completed" | "cancelled"
@@ -35,7 +36,7 @@ export default function AppointmentsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user || !user.id) {
+    if (!user || !user.username) {
       setError("You must be logged in to view your appointments.")
       setLoading(false)
       return
@@ -43,7 +44,7 @@ export default function AppointmentsPage() {
 
     const fetchAppointments = async () => {
       try {
-        const response = await fetch(`/api/appointments/user/${user.id}`)
+        const response = await fetch(`/api/appointments/user/${user.username}`)
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }

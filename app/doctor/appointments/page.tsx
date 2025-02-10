@@ -30,7 +30,7 @@ export default function DoctorAppointmentsPage() {
       }
 
       try {
-        const response = await fetch(`/api/appointments/doctor/${user.id}`);
+        const response = await fetch(`/api/appointments/doctor/${user.username}`);
         if (!response.ok) {
           throw new Error('Failed to fetch appointments');
         }

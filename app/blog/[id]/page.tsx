@@ -39,7 +39,8 @@ const blogPosts = {
 export default function BlogPostPage() {
   const { id } = useParams()
   const contentRef = useRef<HTMLDivElement>(null)
-  const post = blogPosts[id as keyof typeof blogPosts]
+  const postId = Array.isArray(id) ? id[0] : id;
+  const post = blogPosts[postId as unknown as keyof typeof blogPosts];
 
   useEffect(() => {
     if (!contentRef.current) return
