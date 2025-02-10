@@ -16,8 +16,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("user");
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(""); // ✅ FIXED: Defined setErrorMessage
-  const { login, signup } = useAuth();
+  const [errorMessage, setErrorMessage] = useState("");
+  const { user, login, signup } = useAuth();
   const router = useRouter();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -25,19 +25,23 @@ export default function LoginPage() {
   const formRef = useRef<HTMLDivElement>(null);
   const roleFieldRef = useRef<HTMLDivElement>(null);
 
-  // Initialize animations
+  useEffect(() => {
+    if (user) {
+      router.push("/");
+    }
+  }, [user, router]);
+
   useEffect(() => {
     gsap.from(".auth-card", { duration: 1, scale: 0.8, opacity: 0, ease: "power3.out" });
     gsap.from(".decorative-element", { duration: 1.5, scale: 0, rotation: 180, stagger: 0.2, ease: "elastic.out(1, 0.5)" });
     gsap.to(".floating-element", { y: 15, duration: 2, repeat: -1, yoyo: true, ease: "power1.inOut" });
   }, []);
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
-  
+
     try {
       if (isLogin) {
         await login(username, password);
@@ -55,14 +59,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-sky-100 relative overflow-hidden">
-      {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10 bg-pattern" style={{ backgroundImage: `radial-gradient(circle at 10% 10%, #3B82F622 20%, transparent 20%)`, backgroundSize: "40px 40px" }} />
 
-      {/* Floating Medical Icons */}
       <HeartPulse className="absolute top-1/4 left-20 text-blue-200/30 floating-element h-16 w-16 decorative-element" />
       <Stethoscope className="absolute top-1/3 right-32 text-blue-200/30 floating-element h-16 w-16 decorative-element" />
 
-      {/* Main Card */}
       <div ref={containerRef} className="auth-card bg-white p-8 rounded-xl shadow-2xl w-96 relative z-10 border border-blue-50">
         <div ref={formRef} className="login-content">
           <div className="text-center mb-8">
@@ -73,7 +74,7 @@ export default function LoginPage() {
             <p className="text-gray-600">{isLogin ? "Secure access to your health portal" : "Start your health journey today"}</p>
           </div>
 
-          {errorMessage && <p className="text-red-500 text-sm text-center mb-4">{errorMessage}</p>} {/* ✅ FIXED: Error Message Display */}
+          {errorMessage && <p className="text-red-500 text-sm text-center mb-4">{errorMessage}</p>}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="login-content">
