@@ -35,7 +35,7 @@ export default function AppointmentsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !user.id) {
       setError("You must be logged in to view your appointments.")
       setLoading(false)
       return

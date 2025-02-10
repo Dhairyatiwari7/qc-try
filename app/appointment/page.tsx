@@ -1,51 +1,54 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { gsap } from "gsap"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAuth } from "../contexts/AuthContext"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // Fixed: Correct import for Next.js 13+ navigation
+import { gsap } from "gsap";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "../contexts/AuthContext";
 
 type Doctor = {
-  _id: string
-  name: string
-  speciality: string
-  fees: number
-  availability: string
-  rating: number
-  image: string
-}
+  _id: string;
+  name: string;
+  speciality: string;
+  fees: number;
+  availability: string;
+  rating: number;
+  image: string;
+};
 
-export default function AppointmentPage() {
-  const { user } = useAuth()
-  const [doctors, setDoctors] = useState<Doctor[]>([])
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
-  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export default function BookAppointmentPage() {
+  const { user } = useAuth(); 
+  const router = useRouter();
+
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await fetch('/api/doctors')
+        const response = await fetch("/api/doctors");
         if (!response.ok) {
-          throw new Error("Failed to fetch doctors")
+          throw new Error("Failed to fetch doctors");
         }
-        const data = await response.json()
-        setDoctors(data)
+        const data = await response.json();
+        setDoctors(data);
       } catch (error) {
-        console.error("Error fetching doctors:", error)
-        setError("Failed to load doctors. Please try again later.")
+        console.error("Error fetching doctors:", error);
+        setError("Failed to load doctors. Please try again later.");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchDoctors()
-  }, [])
+    fetchDoctors();
+  }, []);
 
   useEffect(() => {
     if (!loading && doctors.length > 0) {
@@ -55,49 +58,50 @@ export default function AppointmentPage() {
         stagger: 0.1,
         duration: 0.8,
         ease: "power3.out",
-      })
+      });
     }
-  }, [loading, doctors])
+  }, [loading, doctors]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!user || !selectedDoctor || !selectedDate || !selectedTime) {
-      setError("Please fill in all fields")
-      return
+      setError("Please fill in all fields");
+      return;
     }
 
     try {
-      const response = await fetch('/api/appointments', {
-        method: 'POST',
+      const response = await fetch("/api/appointments", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           doctorId: selectedDoctor._id,
           userId: user.id,
-          date: selectedDate,
+          date: selectedDate.toISOString(), 
           time: selectedTime,
-          status: 'upcoming',
+          status: "upcoming",
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to book appointment")
+        throw new Error("Failed to book appointment");
       }
 
-      // Handle successful booking (e.g., show success message, redirect)
+      // Redirect to the appointments page
+      router.push("/appointments");
     } catch (error) {
-      console.error("Error booking appointment:", error)
-      setError("Failed to book appointment. Please try again.")
+      console.error("Error booking appointment:", error);
+      setError("Failed to book appointment. Please try again.");
     }
-  }
+  };
 
   if (loading) {
-    return <div className="text-center py-12">Loading doctors...</div>
+    return <div className="text-center py-12">Loading doctors...</div>;
   }
 
   if (error) {
-    return <div className="text-center py-12 text-red-500">{error}</div>
+    return <div className="text-center py-12 text-red-500">{error}</div>;
   }
 
   return (
@@ -111,8 +115,8 @@ export default function AppointmentPage() {
               <CardDescription>{doctor.speciality}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>Fees: ${doctor.fees}</p>
-              <p>Rating: {doctor.rating}</p>
+              <p>Fees: ₹{doctor.fees}</p>
+              <p>Rating: {doctor.rating} ⭐</p>
               <Button onClick={() => setSelectedDoctor(doctor)} className="mt-4">
                 Select
               </Button>
@@ -132,12 +136,11 @@ export default function AppointmentPage() {
             />
           </div>
           <div className="mb-4">
-            <Select onValueChange={setSelectedTime}>
+            <Select onValueChange={(value) => setSelectedTime(value)}> {/* Fixed: Ensure proper function usage */}
               <SelectTrigger>
                 <SelectValue placeholder="Select time" />
               </SelectTrigger>
               <SelectContent>
-                {/* Add time slots based on doctor's availability */}
                 <SelectItem value="09:00">09:00 AM</SelectItem>
                 <SelectItem value="10:00">10:00 AM</SelectItem>
                 <SelectItem value="11:00">11:00 AM</SelectItem>
@@ -149,5 +152,5 @@ export default function AppointmentPage() {
         </form>
       )}
     </div>
-  )
+  );
 }
