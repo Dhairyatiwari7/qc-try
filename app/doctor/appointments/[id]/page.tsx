@@ -1,10 +1,12 @@
 "use client"
 
-
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { gsap } from "gsap"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useAuth } from "../../../contexts/AuthContext"
+import { ArrowLeft } from "lucide-react"
 
 interface Patient {
   name: string
@@ -22,8 +24,15 @@ export default function PatientDetailPage() {
   const [patient, setPatient] = useState<Patient | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
+    if (!user || user.role !== "doctor") {
+      router.push("/login")
+      return
+    }
+
     const fetchPatientDetails = async () => {
       try {
         const response = await fetch(`/api/patients/${id}`)
@@ -41,7 +50,7 @@ export default function PatientDetailPage() {
     }
 
     fetchPatientDetails()
-  }, [id])
+  }, [id, user, router])
 
   useEffect(() => {
     if (!loading && patient) {
@@ -56,9 +65,9 @@ export default function PatientDetailPage() {
     }
   }, [loading, patient])
 
-  if (loading) return <div>Loading patient details...</div>
-  if (error) return <div>Error: {error}</div>
-  if (!patient) return <div>Patient not found</div>
+  if (loading) return <div className="text-center py-12">Loading patient details...</div>
+  if (error) return <div className="text-center py-12 text-red-500">Error: {error}</div>
+  if (!patient) return <div className="text-center py-12">Patient not found</div>
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">

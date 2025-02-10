@@ -1,188 +1,153 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { gsap } from "gsap"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Star } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Notification } from "@/components/notification"
+import { useAuth } from "../contexts/AuthContext"
 
 type Doctor = {
-  id: string;
-  name: string;
-  speciality: string;
-  fees: string;
-  availability: string;
-  rating: number;
-};
+  _id: string
+  name: string
+  speciality: string
+  fees: number
+  availability: string
+  rating: number
+  image: string
+}
 
 export default function AppointmentPage() {
-  const [searchTerm, setSearchTerm] = useState("")
+  const { user } = useAuth()
+  const [doctors, setDoctors] = useState<Doctor[]>([])
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined)
-  const [showNotification, setShowNotification] = useState(false)
-  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await fetch("/api/doctors");
-        if (!response.ok) throw new Error("Failed to fetch doctors");
-        const data = await response.json();
-        setDoctors(data);
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError("An unknown error occurred");
+        const response = await fetch('/api/doctors')
+        if (!response.ok) {
+          throw new Error("Failed to fetch doctors")
         }
-      }
-    };
-
-    fetchDoctors();
-
-    gsap.from(".appointment-content", {
-      opacity: 0,
-      y: 20,
-      duration: 0.8,
-      ease: "power3.out",
-      stagger: 0.1,
-    });
-  }, []);
-
-  const filteredDoctors = doctors.filter(
-    (doctor) =>
-      doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doctor.speciality.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const handleBookAppointment = async () => {
-    if (selectedDoctor && selectedDate && selectedTime) {
-      try {
-        const response = await fetch("/api/appointments", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            doctorId: selectedDoctor.id,
-            date: selectedDate,
-            time: selectedTime,
-          }),
-        });
-
-        if (!response.ok) throw new Error("Failed to book appointment");
-        setShowNotification(true);
+        const data = await response.json()
+        setDoctors(data)
       } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError("Failed to book appointment");
-        }
+        console.error("Error fetching doctors:", error)
+        setError("Failed to load doctors. Please try again later.")
+      } finally {
+        setLoading(false)
       }
+    }
+
+    fetchDoctors()
+  }, [])
+
+  useEffect(() => {
+    if (!loading && doctors.length > 0) {
+      gsap.from(".doctor-card", {
+        opacity: 0,
+        y: 20,
+        stagger: 0.1,
+        duration: 0.8,
+        ease: "power3.out",
+      })
+    }
+  }, [loading, doctors])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !selectedDoctor || !selectedDate || !selectedTime) {
+      setError("Please fill in all fields")
+      return
+    }
+
+    try {
+      const response = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          doctorId: selectedDoctor._id,
+          userId: user.id,
+          date: selectedDate,
+          time: selectedTime,
+          status: 'upcoming',
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to book appointment")
+      }
+
+      // Handle successful booking (e.g., show success message, redirect)
+    } catch (error) {
+      console.error("Error booking appointment:", error)
+      setError("Failed to book appointment. Please try again.")
     }
   }
 
+  if (loading) {
+    return <div className="text-center py-12">Loading doctors...</div>
+  }
+
   if (error) {
-    return <div className="text-center text-red-500">{error}</div>
+    return <div className="text-center py-12 text-red-500">{error}</div>
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <h1 className="appointment-content text-3xl font-bold text-center mb-8">Book an Appointment</h1>
-      <div className="appointment-content mb-8">
-        <Label htmlFor="search">Search for doctors, specialities, or diseases</Label>
-        <Input id="search" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-      </div>
-      <div className="appointment-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredDoctors.map((doctor) => (
-          <Card key={doctor.id} className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-105">
+    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <h1 className="text-3xl font-bold text-center mb-8">Book an Appointment</h1>
+      <div className="grid gap-6 md:grid-cols-2">
+        {doctors.map((doctor) => (
+          <Card key={doctor._id} className="doctor-card">
             <CardHeader>
-              <Avatar className="w-16 h-16 mx-auto">
-                <AvatarImage src={`https://i.pravatar.cc/150?u=${doctor.id}`} />
-                <AvatarFallback>
-                  {doctor.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-              <CardTitle className="text-center mt-2">{doctor.name}</CardTitle>
-              <CardDescription className="text-center">{doctor.speciality}</CardDescription>
+              <CardTitle>{doctor.name}</CardTitle>
+              <CardDescription>{doctor.speciality}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-center mb-2">Fees: {doctor.fees}</p>
-              <p className="text-center mb-2">Available: {doctor.availability}</p>
-              <div className="flex justify-center items-center">
-                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                <span className="ml-1">{doctor.rating}</span>
-              </div>
+              <p>Fees: ${doctor.fees}</p>
+              <p>Rating: {doctor.rating}</p>
+              <Button onClick={() => setSelectedDoctor(doctor)} className="mt-4">
+                Select
+              </Button>
             </CardContent>
-            <CardFooter>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full" onClick={() => setSelectedDoctor(doctor)}>
-                    Book Appointment
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Book Appointment with {selectedDoctor?.name}</DialogTitle>
-                    <DialogDescription>Select a date and time for your appointment.</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      className="rounded-md border"
-                    />
-                    <Select onValueChange={setSelectedTime}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="09:00">09:00 AM</SelectItem>
-                        <SelectItem value="10:00">10:00 AM</SelectItem>
-                        <SelectItem value="11:00">11:00 AM</SelectItem>
-                        <SelectItem value="14:00">02:00 PM</SelectItem>
-                        <SelectItem value="15:00">03:00 PM</SelectItem>
-                        <SelectItem value="16:00">04:00 PM</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={handleBookAppointment}>Confirm Booking</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </CardFooter>
           </Card>
         ))}
       </div>
-      {showNotification && (
-        <Notification
-          message={`Appointment booked with ${selectedDoctor?.name} on ${selectedDate?.toDateString()} at ${selectedTime}`}
-          onClose={() => setShowNotification(false)}
-        />
+      {selectedDoctor && (
+        <form onSubmit={handleSubmit} className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Book appointment with {selectedDoctor.name}</h2>
+          <div className="mb-4">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border"
+            />
+          </div>
+          <div className="mb-4">
+            <Select onValueChange={setSelectedTime}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select time" />
+              </SelectTrigger>
+              <SelectContent>
+                {/* Add time slots based on doctor's availability */}
+                <SelectItem value="09:00">09:00 AM</SelectItem>
+                <SelectItem value="10:00">10:00 AM</SelectItem>
+                <SelectItem value="11:00">11:00 AM</SelectItem>
+                {/* Add more time slots as needed */}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="submit">Book Appointment</Button>
+        </form>
       )}
     </div>
   )
 }
-
